@@ -1,19 +1,9 @@
-"""
-Extraction unique des embeddings fastText → matrice float16.
-
-Usage :
-  1. Télécharger cc.fr.300.bin depuis https://fasttext.cc/docs/en/crawl-vectors.html
-  2. pip install gensim numpy
-  3. python scripts/extract_embeddings.py --fasttext /chemin/vers/cc.fr.300.bin
-
-Après extraction, supprimer cc.fr.300.bin (~2 Go).
-"""
-
 import argparse
 import json
 import os
 import sys
 
+import fasttext
 import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -24,44 +14,36 @@ EMBEDDINGS_PATH = os.path.join(DATA_DIR, "embeddings.npy")
 
 def main():
     parser = argparse.ArgumentParser(description="Extract embeddings from fastText")
-    parser.add_argument(
-        "--fasttext", required=True, help="Path to cc.fr.300.bin"
-    )
-    parser.add_argument(
-        "--dims", type=int, default=300, help="Vector dimensions (default: 300)"
-    )
+    parser.add_argument("--fasttext", required=True, help="Path to cc.fr.300.bin")
+    parser.add_argument("--dims", type=int, default=300, help="Vector dimensions (default: 300)")
     args = parser.parse_args()
 
-    from gensim.models.fasttext import load_facebook_model
-
     print("Chargement du modèle fastText (~2 Go)...")
-    model = load_facebook_model(args.fasttext)
+    sys.stdout.flush()
+    model = fasttext.load_model(args.fasttext)
 
     print("Chargement de la liste des mots...")
     with open(WORDS_ORDER_PATH, "r", encoding="utf-8") as f:
         words = json.load(f)
 
     print(f"Extraction des vecteurs pour {len(words)} mots...")
-    vocab = model.wv
     dims = args.dims
     matrix = np.zeros((len(words), dims), dtype=np.float32)
-    found = 0
     missing = []
 
     for i, word in enumerate(words):
-        if word in vocab:
-            matrix[i] = vocab[word]
-            found += 1
-        else:
+        v = model.get_word_vector(word)
+        if v.sum() == 0.0:
             missing.append(word)
+        else:
+            matrix[i] = v
+        if (i + 1) % 10000 == 0:
+            print(f"  {i+1}/{len(words)}...")
 
     if missing:
-        print(
-            f"  Attention : {len(missing)} mots non trouvés dans fastText: "
-            f"{missing[:10]}..."
-        )
+        print(f"  Attention : {len(missing)} mots avec vecteur nul: {missing[:10]}...")
 
-    print(f"  {found}/{len(words)} vecteurs extraits")
+    print(f"  {len(words) - len(missing)}/{len(words)} vecteurs extraits")
 
     matrix_float16 = matrix.astype(np.float16)
     np.save(EMBEDDINGS_PATH, matrix_float16)
