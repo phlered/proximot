@@ -27,6 +27,7 @@
   let bestScores = [0, 0, 0, 0];
   let foundMask = 0;
   let targetWords = [null, null, null, null];
+  let currentDetailTarget = -1;
   let stateLoaded = false;
 
   // ---------- Normalization ----------
@@ -174,7 +175,7 @@
   function renderHistory() {
     const list = $('history-list');
     list.innerHTML = '';
-    for (const h of history) {
+    for (const h of history.slice().reverse()) {
       const item = document.createElement('div');
       item.className = 'history-item';
       let scoresHtml = '';
@@ -188,14 +189,22 @@
     }
   }
 
+  function showInputBar(show) {
+    $('input-bar').classList.toggle('hidden', !show);
+  }
+
+  function showModal() {
+    $('modal-overlay').classList.remove('hidden');
+    $('word-input').blur();
+  }
+
   function renderAll() {
     renderSlots();
     renderHistory();
-    $('part-label').textContent = `Partie ${currentPart + 1}/${NUM_PARTS}`;
-    $('attempt-count').textContent = `${attempts} essai${attempts > 1 ? 's' : ''}`;
   }
 
   function showDetail(target) {
+    currentDetailTarget = target;
     const isFound = !!(foundMask & (1 << target));
     $('detail-label').textContent = isFound
       ? `Mot n°${target + 1} : ${targetWords[target]}`
@@ -211,7 +220,7 @@
     ranked.sort((a, b) => b.score - a.score);
 
     if (ranked.length === 0) {
-      container.innerHTML = '<div class="detail-item" style="color:var(--text2)">Aucun essai pour ce mot</div>';
+      container.innerHTML = '<div class="detail-item" style="color:var(--text2)">Aucun mot correspondant trouvé</div>';
     } else {
       ranked.forEach((r, i) => {
         const el = document.createElement('div');
@@ -225,6 +234,7 @@
       });
     }
     screen('detail-screen');
+    showInputBar(true);
   }
 
   // ---------- Game logic ----------
@@ -239,7 +249,7 @@
     } else {
       $('word-input').value = '';
       $('autocomplete').classList.add('hidden');
-      alert('Mot inconnu');
+      showModal();
     }
   }
 
@@ -260,6 +270,9 @@
     history.push({ word: originalWord, scores });
     renderAll();
     saveState();
+    if (currentDetailTarget >= 0 && $(`detail-screen`).classList.contains('active')) {
+      showDetail(currentDetailTarget);
+    }
 
     if (foundMask === (1 << TARGETS_PER_PART) - 1) {
       setTimeout(showPartComplete, 800);
@@ -273,9 +286,11 @@
     bestScores = [0, 0, 0, 0];
     foundMask = 0;
     targetWords = [null, null, null, null];
+    currentDetailTarget = -1;
     renderAll();
     saveState();
     screen('game-screen');
+    showInputBar(true);
   }
 
   function showPartComplete() {
@@ -303,10 +318,11 @@
       $('btn-next-part').classList.add('hidden');
       $('btn-done').classList.remove('hidden');
       $('btn-done').textContent = 'Reviens demain !';
-      $('btn-done').onclick = () => screen('rules-screen');
+      $('btn-done').onclick = () => { screen('rules-screen'); showInputBar(false); };
     }
 
     screen('part-complete-screen');
+    showInputBar(false);
   }
 
   // ---------- Autocomplete ----------
@@ -357,6 +373,7 @@
 
     // Show rules screen
     screen('rules-screen');
+    showInputBar(false);
 
     // Load recent days
     try {
@@ -391,7 +408,9 @@
   $('btn-play-top').addEventListener('click', () => startPart(0));
   $('btn-play-bottom').addEventListener('click', () => startPart(0));
   $('btn-submit').addEventListener('click', submitWord);
-  $('btn-back').addEventListener('click', () => { renderAll(); screen('game-screen'); });
+  $('btn-back').addEventListener('click', () => { currentDetailTarget = -1; renderAll(); screen('game-screen'); });
+  $('btn-modal-close').addEventListener('click', () => { $('modal-overlay').classList.add('hidden'); $('word-input').focus(); });
+  $('modal-overlay').addEventListener('click', (e) => { if (e.target === $('modal-overlay')) { $('modal-overlay').classList.add('hidden'); $('word-input').focus(); } });
   $('word-input').addEventListener('input', () => {
     $('btn-submit').disabled = !$('word-input').value.trim();
     updateAutocomplete();

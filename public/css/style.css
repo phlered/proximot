@@ -40,7 +40,7 @@ html, body {
 }
 
 .screen { display: none; }
-.screen.active { display: block; }
+.screen.active { display: block !important; }
 .hidden { display: none !important; }
 
 /* ---------- Rules screen ---------- */
@@ -134,53 +134,59 @@ html, body {
   margin-top: 10px;
 }
 
-/* ---------- Game header ---------- */
-.game-header {
+/* ---------- Input bar ---------- */
+.input-bar {
   padding: 8px 0;
+  background: var(--bg);
+  position: relative;
 }
 
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-#part-label {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-#attempt-count {
-  font-size: 0.8rem;
-  color: var(--text2);
-}
-
-.input-group {
+.input-wrapper {
   display: flex;
   gap: 8px;
-  flex: 1;
+  align-items: stretch;
   position: relative;
+}
+
+.input-field {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0 14px;
+}
+
+.input-field:focus-within {
+  border-color: var(--accent);
 }
 
 #word-input {
   flex: 1;
-  padding: 12px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: transparent;
+  border: none;
   color: var(--text);
   font-size: 1rem;
   outline: none;
-}
-
-#word-input:focus {
-  border-color: var(--accent);
+  padding: 12px 0;
+  min-width: 0;
 }
 
 #word-input::placeholder {
   color: var(--text2);
+}
+
+.input-hint-inline {
+  color: var(--text2);
+  font-size: 0.65rem;
+  line-height: 1;
+  text-align: right;
+  opacity: 0.65;
+  flex-shrink: 0;
+  margin-left: 6px;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 #btn-submit {
@@ -191,6 +197,7 @@ html, body {
   border-radius: var(--radius);
   font-size: 1.2rem;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 #btn-submit:disabled {
@@ -224,7 +231,7 @@ html, body {
 
 /* ---------- Slots ---------- */
 .slots-container {
-  margin: 12px 0;
+  margin: 4px 0 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -446,4 +453,59 @@ html, body {
   padding: 60px 0;
   color: var(--text2);
   font-size: 1.1rem;
+}
+
+/* ---------- Modal ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px 20px 20px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+}
+
+#modal-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.modal-rules {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 14px 0 18px;
+  text-align: left;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text2);
+}
+
+.modal-rules strong {
+  color: var(--text);
+}
+
+.modal-rules em {
+  color: var(--text);
+  font-style: normal;
+  font-weight: 600;
+}
+
+#btn-modal-close {
+  width: 100%;
+  padding: 12px;
 }

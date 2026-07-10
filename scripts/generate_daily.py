@@ -4,8 +4,14 @@ Génération quotidienne des parties.
 Usage (GitHub Action) :
   python scripts/generate_daily.py
 
-Charge embeddings.npy et words_order.json, génère 3 parties × 4 mots,
-calcule les top 1000 similarités, écrit le .bin et met à jour index.json.
+Charge :
+  - words_order.json (tous les mots proposables)
+  - targets_order.json (mots à trouver, sous-ensemble)
+  - embeddings.npy (vecteurs pour tous les mots proposables)
+
+Génère 3 parties × 4 mots tirés depuis targets_order.json,
+calcule les top 1000 similarités contre tous les mots proposables,
+écrit le .bin et met à jour index.json.
 """
 
 import hashlib
@@ -21,6 +27,7 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 PUBLIC_DATA_DIR = os.path.join(BASE_DIR, "public", "data")
 
 WORDS_ORDER_PATH = os.path.join(DATA_DIR, "words_order.json")
+TARGETS_ORDER_PATH = os.path.join(DATA_DIR, "targets_order.json")
 EMBEDDINGS_PATH = os.path.join(DATA_DIR, "embeddings.npy")
 INDEX_PATH = os.path.join(PUBLIC_DATA_DIR, "index.json")
 
@@ -32,21 +39,27 @@ VERSION = 1
 
 
 def seed_from_date(date_str: str, part: int) -> int:
-    """Seed reproductible = hash(date + part)."""
     key = f"{date_str}-p{part}"
     return int(hashlib.sha256(key.encode()).hexdigest()[:8], 16)
 
 
-def pick_targets(words: list, date_str: str, part: int) -> list:
-    """Tire TARGETS_PER_PART mots sans remise dans la liste."""
+def pick_targets(targets: list, date_str: str, part: int) -> list:
     rng = random.Random(seed_from_date(date_str, part))
-    return rng.sample(words, TARGETS_PER_PART)
+    return rng.sample(targets, TARGETS_PER_PART)
 
 
 def main():
-    print("Chargement des mots...")
+    print("Chargement des mots proposables...")
     with open(WORDS_ORDER_PATH, "r", encoding="utf-8") as f:
-        words = json.load(f)
+        all_words = json.load(f)
+
+    print("Chargement des mots à trouver...")
+    with open(TARGETS_ORDER_PATH, "r", encoding="utf-8") as f:
+        target_words = json.load(f)
+
+    # Map target words to their indices in the full guessable list
+    word_to_idx = {w: i for i, w in enumerate(all_words)}
+    target_indices = [word_to_idx[w] for w in target_words]
 
     print("Chargement des embeddings...")
     matrix = np.load(EMBEDDINGS_PATH).astype(np.float32)
@@ -82,11 +95,10 @@ def main():
     buf = bytearray()
     buf += struct.pack("<HBB", MAGIC, VERSION, NUM_PARTS)
 
-    all_parts_targets = []
     for part in range(NUM_PARTS):
         for attempt in range(100):
-            candidates = pick_targets(words, today, part + attempt * 10)
-            c_indices = [words.index(c) for c in candidates]
+            candidates = pick_targets(target_words, today, part + attempt * 10)
+            c_indices = [word_to_idx[c] for c in candidates]
             if all(i not in all_target_indices for i in c_indices):
                 break
 
@@ -94,7 +106,6 @@ def main():
             print(f"  Partie {part + 1}, mot {i + 1} : {w} (idx {c_indices[i]})")
 
         all_target_indices.update(c_indices)
-        all_parts_targets.append((candidates, c_indices))
 
         for t_idx in c_indices:
             vec = matrix_normed[t_idx]
