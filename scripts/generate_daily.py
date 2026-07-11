@@ -24,7 +24,7 @@ import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-PUBLIC_DATA_DIR = os.path.join(BASE_DIR, "public", "data")
+PUBLIC_DATA_DIR = os.path.join(BASE_DIR, "docs", "data")
 
 WORDS_ORDER_PATH = os.path.join(DATA_DIR, "words_order.json")
 TARGETS_ORDER_PATH = os.path.join(DATA_DIR, "targets_order.json")

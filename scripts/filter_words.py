@@ -4,7 +4,7 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-PUBLIC_DATA_DIR = os.path.join(BASE_DIR, "public", "data")
+PUBLIC_DATA_DIR = os.path.join(BASE_DIR, "docs", "data")
 
 LEXIQUE_PATH = os.path.join(DATA_DIR, "Lexique4.tsv")
 WORDS_ORDER_PATH = os.path.join(DATA_DIR, "words_order.json")
