@@ -156,6 +156,13 @@ html, body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0 14px;
+  min-width: 0;
+}
+
+@media (max-width: 400px) {
+  .input-wrapper { gap: 4px; }
+  .input-hint-inline { display: none; }
+  #btn-submit { width: 40px; font-size: 1rem; }
 }
 
 .input-field:focus-within {
