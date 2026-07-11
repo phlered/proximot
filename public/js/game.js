@@ -28,6 +28,7 @@
   let foundMask = 0;
   let targetWords = [null, null, null, null];
   let currentDetailTarget = -1;
+  let lastGuessWord = null;      // word string of the most recent guess
   let stateLoaded = false;
 
   // ---------- Normalization ----------
@@ -153,13 +154,27 @@
       const isFound = !!(foundMask & (1 << i));
       const best = bestScores[i] || 0;
       const barPct = Math.min(100, (best / 1000) * 100);
+
+      const ranked = history
+        .map(h => ({ word: h.word, score: h.scores[i] || 0 }))
+        .filter(x => x.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      let topWordsHtml = '';
+      const maxWords = Math.min(ranked.length, 8);
+      for (let j = 0; j < maxWords; j++) {
+        const r = ranked[j];
+        const cls = r.score >= 1000 ? 'slot-topword-found' : '';
+        topWordsHtml += `<span class="slot-topword ${cls}">${r.word}</span>`;
+      }
+
       const slot = document.createElement('div');
       slot.className = 'slot' + (isFound ? ' solved' : '');
       slot.dataset.target = i;
       slot.innerHTML = `
         <div class="slot-header">
           <span class="slot-number">Mot n°${i + 1}</span>
-          ${isFound ? `<span class="slot-word">${targetWords[i] || '?'}</span>` : ''}
+          ${topWordsHtml ? `<span class="slot-topwords">${topWordsHtml}</span>` : ''}
         </div>
         <div class="slot-scores">
           <span class="slot-best">🏆 ${best > 0 ? best + '‰' : '—'}</span>
@@ -169,6 +184,16 @@
         </div>`;
       slot.addEventListener('click', () => showDetail(i));
       container.appendChild(slot);
+
+      // Remove overflowing words
+      if (topWordsHtml) {
+        const tw = slot.querySelector('.slot-topwords');
+        while (tw.scrollWidth > tw.clientWidth) {
+          const last = tw.lastElementChild;
+          if (!last) break;
+          tw.removeChild(last);
+        }
+      }
     }
   }
 
@@ -224,7 +249,8 @@
     } else {
       ranked.forEach((r, i) => {
         const el = document.createElement('div');
-        el.className = 'detail-item';
+        const isNew = r.word === lastGuessWord;
+        el.className = 'detail-item' + (isNew ? ' detail-new' : '');
         const cls = r.score >= 1000 ? 'score-found' : r.score >= 500 ? 'score-hot' : r.score >= 200 ? 'score-warm' : r.score >= 50 ? 'score-cool' : 'score-cold';
         el.innerHTML = `
           <span class="detail-rank">#${i + 1}</span>
@@ -242,6 +268,17 @@
     const raw = $('word-input').value.trim();
     if (!raw) return;
     const n = normalize(raw);
+
+    // Exact match (case-insensitive) preserves retraité ≠ retraite
+    const exactMatch = words.find(w => w.toLowerCase() === raw.toLowerCase());
+    if (exactMatch) {
+      const idx = words.indexOf(exactMatch);
+      $('word-input').value = '';
+      $('autocomplete').classList.add('hidden');
+      makeGuess(n, exactMatch, idx);
+      return;
+    }
+
     if (n in wordIdxMap) {
       $('word-input').value = '';
       $('autocomplete').classList.add('hidden');
@@ -254,6 +291,11 @@
   }
 
   function makeGuess(normalized, originalWord, idx) {
+    // Skip duplicate guesses (compare original word, not normalized)
+    if (history.some(h => h.word === originalWord)) {
+      return;
+    }
+    lastGuessWord = originalWord;
     attempts++;
     const scores = [];
     for (let t = 0; t < TARGETS_PER_PART; t++) {
@@ -287,6 +329,7 @@
     foundMask = 0;
     targetWords = [null, null, null, null];
     currentDetailTarget = -1;
+    lastGuessWord = null;
     renderAll();
     saveState();
     screen('game-screen');
@@ -323,6 +366,39 @@
 
     screen('part-complete-screen');
     showInputBar(false);
+  }
+
+  // ---------- Hint ----------
+  function getHint() {
+    if (currentDetailTarget < 0) return null;
+    const best = bestScores[currentDetailTarget] || 0;
+    const threshold = best + 10;
+    const guessedWords = new Set(history.map(h => h.word));
+    const td = getTargetData(dataView, currentPart, currentDetailTarget);
+    let closest = null;   // unguessed word with smallest score >= threshold
+    let bestAny = null;   // highest-scoring unguessed word overall
+    for (const e of td.entries) {
+      if (e.score >= 1000) continue;
+      const w = e.index < words.length ? words[e.index] : null;
+      if (!w || guessedWords.has(w)) continue;
+      if (!bestAny) bestAny = { word: w, score: e.score };
+      if (e.score >= threshold) {
+        closest = { word: w, score: e.score };
+      }
+    }
+    if (closest) return closest;
+    if (bestAny && bestAny.score > best) return bestAny;
+    return { reveal: true, targetIdx: td.targetIdx };
+  }
+
+  function revealAnswer() {
+    if (currentDetailTarget < 0) return;
+    const td = getTargetData(dataView, currentPart, currentDetailTarget);
+    const targetWord = words[td.targetIdx];
+    const n = normalize(targetWord);
+    if (n in wordIdxMap) {
+      makeGuess(n, targetWord, wordIdxMap[n]);
+    }
   }
 
   // ---------- Autocomplete ----------
@@ -409,6 +485,40 @@
   $('btn-play-bottom').addEventListener('click', () => startPart(0));
   $('btn-submit').addEventListener('click', submitWord);
   $('btn-back').addEventListener('click', () => { currentDetailTarget = -1; renderAll(); screen('game-screen'); });
+  $('btn-hint').addEventListener('click', () => {
+    try {
+      const origVal = $('word-input').value;
+      const hint = getHint();
+      if (!hint) return;
+      if (hint.reveal) {
+        $('confirm-overlay').classList.remove('hidden');
+        $('word-input').blur();
+      } else {
+        $('word-input').value = hint.word;
+        submitWord();
+        if ($('word-input').value !== '') {
+          $('word-input').value = origVal;
+        }
+      }
+    } catch (e) {
+      console.error('Hint error:', e);
+    }
+  });
+  $('btn-confirm-yes').addEventListener('click', () => {
+    $('confirm-overlay').classList.add('hidden');
+    $('word-input').focus();
+    revealAnswer();
+  });
+  $('btn-confirm-no').addEventListener('click', () => {
+    $('confirm-overlay').classList.add('hidden');
+    $('word-input').focus();
+  });
+  $('confirm-overlay').addEventListener('click', (e) => {
+    if (e.target === $('confirm-overlay')) {
+      $('confirm-overlay').classList.add('hidden');
+      $('word-input').focus();
+    }
+  });
   $('btn-modal-close').addEventListener('click', () => { $('modal-overlay').classList.add('hidden'); $('word-input').focus(); });
   $('modal-overlay').addEventListener('click', (e) => { if (e.target === $('modal-overlay')) { $('modal-overlay').classList.add('hidden'); $('word-input').focus(); } });
   $('word-input').addEventListener('input', () => {

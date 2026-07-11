@@ -3,3 +3,4 @@ __pycache__/
 .DS_Store
 cc.fr.300.bin
 cc.fr.300.bin.gz
+frWac*.bin

@@ -33,7 +33,7 @@
     <div class="input-wrapper">
       <div class="input-field">
         <input type="text" id="word-input" placeholder="Propose un mot" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-        <span class="input-hint-inline">masc. sing. ou inf.</span>
+        <span class="input-hint-inline">masculin singulier ou infinitif</span>
       </div>
       <button id="btn-submit" disabled>►</button>
     </div>
@@ -52,6 +52,7 @@
     <header class="detail-header">
       <button id="btn-back" class="btn-back">← Retour</button>
       <span id="detail-label">Mot n°1</span>
+      <button id="btn-hint" class="btn-hint">💡</button>
     </header>
     <div id="detail-history"></div>
   </div>
@@ -72,6 +73,15 @@
         <p>Exemple : <em>chaise</em> ✓ &nbsp; <em>voiture</em> ✓ &nbsp; <em>manger</em> ✓ &nbsp; <em>chaises</em> ✗ &nbsp; <em>belle</em> ✗</p>
       </div>
       <button id="btn-modal-close" class="btn-primary">OK</button>
+    </div>
+  </div>
+  <div id="confirm-overlay" class="modal-overlay hidden">
+    <div class="modal-card">
+      <p id="confirm-text">Voulez-vous vraiment voir la réponse ?</p>
+      <div class="confirm-buttons">
+        <button id="btn-confirm-yes" class="btn-primary">Oui</button>
+        <button id="btn-confirm-no" class="btn-secondary">Non</button>
+      </div>
     </div>
   </div>
 </div>
