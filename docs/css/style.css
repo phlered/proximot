@@ -274,7 +274,7 @@ html, body {
 .slot-topwords {
   display: flex;
   gap: 5px;
-  overflow: hidden;
+  flex-wrap: wrap;
   flex: 1;
   min-width: 0;
 }

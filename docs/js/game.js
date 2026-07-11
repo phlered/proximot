@@ -184,16 +184,6 @@
         </div>`;
       slot.addEventListener('click', () => showDetail(i));
       container.appendChild(slot);
-
-      // Remove overflowing words
-      if (topWordsHtml) {
-        const tw = slot.querySelector('.slot-topwords');
-        while (tw.scrollWidth > tw.clientWidth) {
-          const last = tw.lastElementChild;
-          if (!last) break;
-          tw.removeChild(last);
-        }
-      }
     }
   }
 
