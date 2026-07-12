@@ -292,12 +292,11 @@
   }
 
   function makeGuess(normalized, originalWord, idx) {
-    // Skip duplicate guesses (compare original word, not normalized)
-    if (history.some(h => h.word === originalWord)) {
-      return;
-    }
     lastGuessWord = originalWord;
-    attempts++;
+    const dupIdx = history.findIndex(h => h.word === originalWord);
+    if (dupIdx === -1) {
+      attempts++;
+    }
     const scores = [];
     for (let t = 0; t < TARGETS_PER_PART; t++) {
       const sc = getScoreForTarget(currentPart, t, idx);
@@ -309,6 +308,9 @@
         foundMask |= (1 << t);
         targetWords[t] = originalWord;
       }
+    }
+    if (dupIdx >= 0) {
+      history.splice(dupIdx, 1);
     }
     history.push({ word: originalWord, scores });
     renderAll();
