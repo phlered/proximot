@@ -311,6 +311,36 @@
     }
   }
 
+  function addStarterHints() {
+    const td0 = getTargetData(dataView, currentPart, 0);
+    const targetScores = [30, 20, 10];
+    const usedIndices = new Set();
+    for (const targetScore of targetScores) {
+      let best = null;
+      let bestDiff = Infinity;
+      for (const e of td0.entries) {
+        if (e.score >= 1000) continue;
+        if (usedIndices.has(e.index)) continue;
+        const diff = Math.abs(e.score - targetScore);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          best = e;
+        }
+      }
+      if (best) {
+        usedIndices.add(best.index);
+        const word = words[best.index];
+        const scores = [];
+        for (let t = 0; t < TARGETS_PER_PART; t++) {
+          const sc = t === 0 ? best.score : getScoreForTarget(currentPart, t, best.index);
+          scores.push(sc);
+          if (sc > bestScores[t]) bestScores[t] = sc;
+        }
+        history.push({ word, scores });
+      }
+    }
+  }
+
   async function startPart(part) {
     currentPart = part;
     attempts = 0;
@@ -320,6 +350,7 @@
     targetWords = [null, null, null, null];
     currentDetailTarget = -1;
     lastGuessWord = null;
+    addStarterHints();
     renderAll();
     saveState();
     screen('game-screen');
@@ -433,7 +464,9 @@
 
     // Check if we have a saved game in progress
     if (loadState()) {
-      await startPart(currentPart);
+      renderAll();
+      screen('game-screen');
+      showInputBar(true);
       return;
     }
 
