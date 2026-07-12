@@ -215,10 +215,10 @@
 
   function showToast(word, scores) {
     const toast = $('score-toast');
-    toast.innerHTML = `<span class="toast-word">${word}</span><span class="toast-scores">${scores.map((sc, i) => {
+    toast.innerHTML = `<div class="toast-word">${word}</div><div class="toast-scores">${scores.map((sc, i) => {
       const cls = sc >= 1000 ? 'score-found' : sc >= 500 ? 'score-hot' : sc >= 200 ? 'score-warm' : sc >= 50 ? 'score-cool' : 'score-cold';
       return `<span class="score-pill ${cls}">${sc > 0 ? sc + '' : '—'}</span>`;
-    }).join('')}</span>`;
+    }).join('')}</div>`;
     toast.classList.remove('hidden');
     clearTimeout(toast._timer);
     toast._timer = setTimeout(() => toast.classList.add('hidden'), 2000);
