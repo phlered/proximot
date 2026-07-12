@@ -578,3 +578,47 @@ html, body {
   font-weight: 700;
   color: var(--text);
 }
+
+/* ---------- Score Toast ---------- */
+.score-toast {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  background: var(--surface2);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  transform: translateY(0);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.score-toast.hidden {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toast-word {
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.toast-scores {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.toast-score {
+  padding: 2px 6px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}

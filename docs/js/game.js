@@ -177,7 +177,7 @@
           ${topWordsHtml ? `<span class="slot-topwords">${topWordsHtml}</span>` : ''}
         </div>
         <div class="slot-scores">
-          <span class="slot-best">🏆 ${best > 0 ? best + '‰' : '—'}</span>
+          <span class="slot-best">🏆 ${best > 0 ? best : '—'}</span>
         </div>
         <div class="slot-bar">
           <div class="slot-bar-fill" style="width:${barPct}%"></div>
@@ -213,6 +213,17 @@
     $('word-input').blur();
   }
 
+  function showToast(word, scores) {
+    const toast = $('score-toast');
+    toast.innerHTML = `<span class="toast-word">${word}</span><span class="toast-scores">${scores.map((sc, i) => {
+      const cls = sc >= 1000 ? 'score-found' : sc >= 500 ? 'score-hot' : sc >= 200 ? 'score-warm' : sc >= 50 ? 'score-cool' : 'score-cold';
+      return `<span class="score-pill ${cls}">${sc > 0 ? sc + '' : '—'}</span>`;
+    }).join('')}</span>`;
+    toast.classList.remove('hidden');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.add('hidden'), 2000);
+  }
+
   function renderAll() {
     renderSlots();
     renderHistory();
@@ -245,7 +256,7 @@
         el.innerHTML = `
           <span class="detail-rank">#${i + 1}</span>
           <span class="detail-word">${r.word}</span>
-          <span class="detail-score ${cls}">${r.score}‰</span>`;
+          <span class="detail-score ${cls}">${r.score}</span>`;
         container.appendChild(el);
       });
     }
@@ -301,6 +312,7 @@
     }
     history.push({ word: originalWord, scores });
     renderAll();
+    showToast(originalWord, scores);
     saveState();
     if (currentDetailTarget >= 0 && $(`detail-screen`).classList.contains('active')) {
       showDetail(currentDetailTarget);
@@ -450,8 +462,7 @@
       el.addEventListener('click', () => {
         $('word-input').value = el.textContent;
         container.classList.add('hidden');
-        $('btn-submit').disabled = false;
-        $('word-input').focus();
+        submitWord();
       });
     });
   }
@@ -551,7 +562,7 @@
     updateAutocomplete();
   });
   $('word-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !$('btn-submit').disabled) {
+    if (e.key === 'Enter') {
       submitWord();
     }
     if (e.key === 'Escape') {

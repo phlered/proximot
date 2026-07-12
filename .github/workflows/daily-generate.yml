@@ -21,11 +21,15 @@ jobs:
       - name: Générer les données du jour
         run: python scripts/generate_daily.py
 
+      - name: Mettre à jour la date du manifest
+        run: |
+          sed -i "s/\"start_url\": \"\/?d=[0-9]*\"/\"start_url\": \"\/?d=$(date +%Y%m%d)\"/" docs/manifest.json
+
       - name: Committer et pusher
         run: |
           git config user.name "Proximot Bot"
           git config user.email "bot@proximot.local"
-          git add docs/data/
+          git add docs/data/ docs/manifest.json
           if git diff --cached --quiet; then
             echo "Aucun changement"
           else
