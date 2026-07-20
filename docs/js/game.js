@@ -29,6 +29,7 @@
   let targetWords = [null, null, null, null];
   let currentDetailTarget = -1;
   let lastGuessWord = null;      // word string of the most recent guess
+  let lastWasHint = false;
   let stateLoaded = false;
 
   // ---------- Normalization ----------
@@ -156,7 +157,7 @@
       const barPct = Math.min(100, (best / 1000) * 100);
 
       const ranked = history
-        .map(h => ({ word: h.word, score: h.scores[i] || 0 }))
+        .map(h => ({ word: h.word, score: h.scores[i] || 0, hint: h.hint }))
         .filter(x => x.score > 0)
         .sort((a, b) => b.score - a.score);
 
@@ -164,7 +165,7 @@
       const maxWords = Math.min(ranked.length, 8);
       for (let j = 0; j < maxWords; j++) {
         const r = ranked[j];
-        const cls = r.score >= 1000 ? 'slot-topword-found' : '';
+        const cls = r.score >= 1000 ? 'slot-topword-found' : r.hint ? 'slot-topword-hint' : '';
         topWordsHtml += `<span class="slot-topword ${cls}">${r.word}</span>`;
       }
 
@@ -199,7 +200,7 @@
         const cls = sc >= 1000 ? 'score-found' : sc >= 500 ? 'score-hot' : sc >= 200 ? 'score-warm' : sc >= 50 ? 'score-cool' : 'score-cold';
         scoresHtml += `<span class="score-pill ${cls}">${sc > 0 ? sc + '' : '—'}</span>`;
       }
-      item.innerHTML = `<div class="history-word">${h.word}</div><div class="history-scores">${scoresHtml}</div>`;
+      item.innerHTML = `<div class="history-word${h.hint ? ' hint-word' : ''}">${h.word}</div><div class="history-scores">${scoresHtml}</div>`;
       list.appendChild(item);
     }
   }
@@ -241,7 +242,7 @@
     const ranked = [];
     for (const h of history) {
       const sc = h.scores[target] || 0;
-      if (sc > 0) ranked.push({ word: h.word, score: sc });
+      if (sc > 0) ranked.push({ word: h.word, score: sc, hint: h.hint });
     }
     ranked.sort((a, b) => b.score - a.score);
 
@@ -255,7 +256,7 @@
         const cls = r.score >= 1000 ? 'score-found' : r.score >= 500 ? 'score-hot' : r.score >= 200 ? 'score-warm' : r.score >= 50 ? 'score-cool' : 'score-cold';
         el.innerHTML = `
           <span class="detail-rank">#${i + 1}</span>
-          <span class="detail-word">${r.word}</span>
+          <span class="detail-word${r.hint ? ' hint-word' : ''}">${r.word}</span>
           <span class="detail-score ${cls}">${r.score}</span>`;
         container.appendChild(el);
       });
@@ -312,7 +313,8 @@
     if (dupIdx >= 0) {
       history.splice(dupIdx, 1);
     }
-    history.push({ word: originalWord, scores });
+    history.push({ word: originalWord, scores, hint: lastWasHint });
+    lastWasHint = false;
     renderAll();
     showToast(originalWord, scores);
     saveState();
@@ -351,7 +353,7 @@
             scores.push(sc);
             if (sc > bestScores[tt]) bestScores[tt] = sc;
           }
-          history.push({ word, scores });
+          history.push({ word, scores, hint: true });
         }
       }
     }
@@ -434,6 +436,7 @@
     const targetWord = words[td.targetIdx];
     const n = normalize(targetWord);
     if (n in wordIdxMap) {
+      lastWasHint = true;
       makeGuess(n, targetWord, wordIdxMap[n]);
     }
   }
@@ -532,6 +535,7 @@
         $('confirm-overlay').classList.remove('hidden');
         $('word-input').blur();
       } else {
+        lastWasHint = true;
         $('word-input').value = hint.word;
         submitWord();
         if ($('word-input').value !== '') {

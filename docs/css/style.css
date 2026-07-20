@@ -291,6 +291,14 @@ html, body {
   font-weight: 700;
 }
 
+.slot-topword-hint {
+  color: #e8a830;
+}
+
+.hint-word {
+  color: #e8a830;
+}
+
 .slot-scores {
   display: flex;
   gap: 12px;
