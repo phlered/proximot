@@ -192,6 +192,7 @@
     const list = $('history-list');
     list.innerHTML = '';
     for (const h of history.slice().reverse()) {
+      if (h.hint) continue;
       const item = document.createElement('div');
       item.className = 'history-item';
       let scoresHtml = '';
@@ -200,7 +201,7 @@
         const cls = sc >= 1000 ? 'score-found' : sc >= 500 ? 'score-hot' : sc >= 200 ? 'score-warm' : sc >= 50 ? 'score-cool' : 'score-cold';
         scoresHtml += `<span class="score-pill ${cls}">${sc > 0 ? sc + '' : '—'}</span>`;
       }
-      item.innerHTML = `<div class="history-word${h.hint ? ' hint-word' : ''}">${h.word}</div><div class="history-scores">${scoresHtml}</div>`;
+      item.innerHTML = `<div class="history-word">${h.word}</div><div class="history-scores">${scoresHtml}</div>`;
       list.appendChild(item);
     }
   }
